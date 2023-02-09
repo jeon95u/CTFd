@@ -123,7 +123,8 @@ class ChallengeList(Resource):
         # Require a team if in teams mode
         # TODO: Convert this into a re-useable decorator
         # TODO: The require_team decorator doesnt work because of no admin passthru
-        if get_current_user_attrs():
+        user_attrs = get_current_user_attrs()
+        if user_attrs:
             if is_admin():
                 pass
             else:
@@ -200,6 +201,12 @@ class ChallengeList(Resource):
             except KeyError:
                 # Challenge type does not exist. Fall through to next challenge.
                 continue
+
+            try:
+                if challenge.tags[0]['value'] == user_attrs.fields[0].value:
+                    continue
+            except:
+                pass
 
             # Challenge passes all checks, add it to response
             response.append(
@@ -542,6 +549,13 @@ class ChallengeAttempt(Resource):
         ).count()
 
         challenge = Challenges.query.filter_by(id=challenge_id).first_or_404()
+
+        user_attrs = get_current_user_attrs()
+        try:
+            if challenge.tags[0]['value'] == user_attrs.fields[0].value:
+                abort(404)
+        except:
+            pass
 
         if challenge.state == "hidden":
             abort(404)
